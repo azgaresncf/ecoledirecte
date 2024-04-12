@@ -1,0 +1,31 @@
+openapi: 3.0.0
+info:
+  title: Documentation de l'API EcoleDirecte
+  version: 1.0.0
+servers:
+  - url: https://api.ecoledirecte.com/v3
+paths:
+  /login.awp:
+    post:
+      summary: Authentification sur EcoleDirecte
+      parameters:
+        - name: v
+          in: query
+          required: true
+          description: Version de l'API
+          schema:
+            type: string
+            example: "4.53.4"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: string
+                  example: '{"uuid": "","identifiant": "VotreIdentifiant","motdepasse":"VotreMotDePasse","isReLogin": false}'
+      responses:
+        '200':
+          description: Connexion réussie

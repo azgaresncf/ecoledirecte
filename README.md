@@ -1,4 +1,6 @@
-# EcoleDirecte Api Documentation
+<html>
+<h2 align="center">Documentation (non-officielle) de l'API d'EcoleDirecte.</h1>
+</html>
 
 > [!WARNING]
 > (Mise à jour du 28/03/2024).
@@ -8,13 +10,12 @@
 > L'implémentation de ce système est décrite [ici](#-concernant-la-connexion-qcm).
 
 ## Introduction
+Bienvenue sur la documentation non-officielle de l'API d'EcoleDirecte.
 
+Si jamais cette documentation vient à être défaillante, merci de faire une issue avec les problèmes rencontrés.
 
-Bienvenue sur la documentation non officielle de l'api d'ecoledirecte.
-
-Si jamais cette documentation vient a être défaillante, merci de faire une issue avec les problèmes rencontrés
-
-(Si jamais vous avez des idées de formatage, hésitez pas à me le faire savoir [MaitreRouge#6916](https://discord.gg/EHM7jubSvE))
+> [!NOTE]
+> Si jamais vous avez des idées de formatage, hésitez pas à me le faire savoir : [`kekaaafm` sur Discord](https://discord.gg/EHM7jubSvE).
 
 
 ## Index
@@ -28,7 +29,7 @@ Juste un rapide sommaire pour naviguer plus facilement dans la documentation.
   - [Codes erreur](#codes-erreur)
   - [Servers.json](#serversjson)
 
-* [Login](#login)
+* [Authentification](#authentification)
   * [Account objects](#accounts-objects)
   * [Modules](#account-modules)
 * [Élève](#élève)
@@ -59,9 +60,9 @@ Juste un rapide sommaire pour naviguer plus facilement dans la documentation.
 
 ## Format de la documentation
 
-La base de l'api élève est ``https://api.ecoledirecte.com/``. Toutes les URLs relatives sont relatives à cette base.
+La base de l'API élève est ``https://api.ecoledirecte.com/``. Toutes les URLs relatives sont relatives à cette base.
 
-Les requêtes prennent généralement des paramètres soit en *query string* dans l'URL soit en JSON dans le corps de la requête. Ces paramètres sont encodés au format `application/x-www-form-urlencoded`, bien que cet encodage soit totalement optionnel pour le corps de la requête.
+Les requêtes prennent généralement des paramètres soit en *query string (Chaîne de requête)* dans l'URL soit en JSON dans le corps de la requête. Ces paramètres sont encodés au format `application/x-www-form-urlencoded`, bien que cet encodage soit totalement optionnel pour le corps de la requête.
 
 **Note** : On peut utiliser la fonction `encodeURIComponent()` en JavaScript et `urllib.parse.quote()` en Python pour encoder ces paramètres.
 
@@ -69,17 +70,34 @@ Les requêtes prennent généralement des paramètres soit en *query string* dan
 
 **Important** : Toutes les requêtes sont faites en `POST`. Elles prennent aussi un paramètre `verbe` utilisé pour spécifier le verbe HTTP. Ici ce paramètre est omis et la méthode HTTP indiquée est en réalité la valeur du paramètre `verbe` (l'exemple est plus clair).
 
+Chaque schéma de réponse présent dans cette documentation est, par défaut, au format TypeScript, permettant de typer (définir) chaque donnée dans ces mêmes schémas. Mais des exemples sont également disponible au format JSON et avec des données d'exemple pour que les développeurs n'étant pas habitués à la syntaxe TypeScript puissent tout de même utiliser l'API sans problème. 
+
 Les réponses suivent généralement le format suivant, et tout schéma de réponse donné correspond en réalité à celui de la valeur de `data` :
+```typescript
+interface Response {
+  host: string; // HTTP<n° serveur>.
+  code: number; // Code 200 lorsque la requête est bonne, ou autre en cas d'erreur.
+  token: string; // Le token, soit le jeton, permettant de pouvoir faire des requêtes avec son compte.
+  message: string; // Rarement présent hors erreur, sinon en cas d'erreur.
+  data: {}; // Objet JSON générique.
+}
+```
+<details>
+<summary>Exemple (en JSON)</summary>
 
 ```jsonc
 {
-  "host": "HTTP<n° serveur>",
+  "host": "HTTP226", // HTTP<n° serveur>
   "code": 200, // Ou autre en cas d'erreur
-  "token": "<token>",
-  "message": "", // Rarement présent hors erreur, sinon en cas d'erreur
-  "data": {...},
+  "token": "16044c4e-82c4-4fb7-8aad-7dd22578401b", // (FAUX TOKEN) - Le token, soit le jeton, permettant de pouvoir faire des requêtes avec son compte.
+  "message": "Tout semble marcher ici, c'est pour l'exemple bien sûr.", // Rarement présent hors erreur, sinon en cas d'erreur
+  "data": { // Objet JSON générique
+    "a": "a", 
+    "b": "b"
+  }
 }
 ```
+</details>
 
 ### Exemple
 
@@ -89,21 +107,20 @@ Avec les paramètres de recherche `mode=destinataire` et les paramètres en JSON
 
 Correspond à la requête
 
-__POST__ `https://api.ecoledirecte.com/v3/eleves/{élève.id}/messages/{message.id}.awp?verbe=get&mode=destinataire` avec le corps `data={ "anneeMessages": "2021-2022" }` ou bien sous forme encodée `data=%7B%20%22anneeMessages%22%3A%20%222021-2022%22%20%7D`
+__POST__ `https://api.ecoledirecte.com/v3/eleves/{eleve.id}/messages/{message.id}.awp?verbe=get&mode=destinataire` avec le corps `data={ "anneeMessages": "2021-2022" }` ou bien sous forme encodée `data=%7B%20%22anneeMessages%22%3A%20%222021-2022%22%20%7D`
 
 
 ## Utilisation de l'API
-
-### NOTE IMPORTANTE :
-
-Avant tout, merci d'ajouter un user-agent dans vos headers pour "faire croire" à ED que vous utilisez un "vrai" navigateur pour faire vos requetes !
-
-Il faut savoir que si vous utilisez un useragent pour obtenir un token, il faudra utiliser le même useragent avec ce token. Si jamais un autre UA est utilisé, le token sera invlidé.
-
-Si vous n'avez pas d'idée en voici un :
-```
-Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36
-```
+> [!WARNING]
+> ### NOTE IMPORTANTE :
+>
+> Avant tout, merci d'ajouter un user-agent dans vos headers pour "faire croire" à ED que vous utilisez un "vrai" navigateur pour faire vos requêtes !
+> 
+> Il faut savoir que si vous utilisez un user-agent pour obtenir un token (jeton de connexion), il faudra utiliser le même user-agent avec ce token. Si jamais un autre UA est utilisé, le token sera invalidé.
+> <br><br>Si vous n'avez pas d'idée en voici un :
+> ```
+> Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36
+> ```
 
 ### Requêtes authentifiées
 
@@ -116,9 +133,9 @@ X-Token: <token>
 
 ### Codes erreur
 
-Liste de differents codes erreur trouvés au fil du temps avec leur description et des solutions pour fixer le pb
+Liste de différents codes erreur trouvés au fil du temps avec leur description et des solutions pour fixer le problème.
 
-*Note : Les requêtes renveront (sauf grosse erreur côté serveur avec une 5xx) toujours dans leur header un code 200, même en cas d'erreur*
+*Note : Les requêtes renverront (sauf grosse erreur côté serveur avec une 5xx) toujours dans leur header un code 200, même en cas d'erreur.*
 
 ```
 Code: 250
@@ -1833,3 +1850,8 @@ Data en body :
 - Pour télécharger un menu de commande click-and-collect ([ici](#commandes)), il faut ajouter `leTypeDeFichier=FICHIER_MENU_RESTAURATION`, ainsi que `fichierId={id}`, id étant le numéro du document.
 
 La réponse est évidemment le contenu du document directement.
+
+## Crédits
+Cette documentation a été soigneusement écrite et corrigée par les collaborateurs suivants :
+- [kekaaafm](https://github.com/kekaaafm) : initiateur de cette documentation.
+- [Chromosore](https://github.com/Chromosore), [Azgar](https://github.com/azgaresncf), [MrBeam89](https://github.com/MrBeam89), [Sheep-San](https://github.com/Sheep-s4n), [Florian Lefebvre](https://github.com/florian-lefebvre), [Armand Camponovo](https://github.com/camarm-dev), [LeMaitre4523](https://github.com/LeMaitre4523) : contributeurs (ajouts & corrections) de cette documentation.
